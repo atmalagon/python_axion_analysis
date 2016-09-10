@@ -42,3 +42,9 @@ def plot_hist(pow_hist, set_bins=30, caption):
     plt.title(caption)
     plt.savefig(pltdir + caption + '_histogram.png', bbox_inches='tight')
     plt.close()
+
+def plot_coadded(coadded_freq, coadded_pow, coadded_weight, err, caption):
+    """Saves plot of coadded weighted spectrum. See docs for details on the methodology."""
+    weighted_pow = [np.average(p, weights=w) for p, w in zip(coadded_pow, coadded_weight)]
+    
+    plt.errorbar(coadded_freq, weighted_pow, yerr=
