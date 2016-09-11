@@ -1,0 +1,1 @@
+[Record(timestamp=datetime.datetime(2016, 9, 10, 16, 41, 50, tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-420, name=None)), digitizer_log_reference=368157, q_channel_one=37205.033333424, mode_frequency_channel_one=697.594375, b_field=1.6659966, cavity_top_temperature=0.315685080617847, squid_temperature=0.312)]
