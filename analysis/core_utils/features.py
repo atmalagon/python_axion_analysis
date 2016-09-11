@@ -30,13 +30,30 @@ def lorentz(f, f_0, BW):
 def mask_data(X, Y, start=30, left=137, right=157, end=264):
     """Returns two columns of data cut on the wings and in the middle."""
     assert len(X) == len(Y)
-    assert len(X) > end
+    assert len(X) >= end
 
     #(TODO) make the defaults more specific to ADMX
 
     Xmask = np.concatenate((X[start:left], X[right:end]))
     Ymask = np.concatenate((Y[start:left], Y[right:end]))
     return Xmask, Ymask
+
+def rescale_scan(data, Tn, bin_width):
+    """
+    Rescale data so that mean is at k_B * Tn * bin_width [Watts].
+    data is an array of power values in Watts, Tn is a noise temperature
+    in Kelvin, and bin_width is the BW of each bin in Hz.
+    """
+    k_B = 1.3806488e-23 # Watts/Hz/Kelvin
+
+    mean = savitzky_golay(data, 11, 4)
+    #(TODO): pass in smoothing parameters as input to main function?
+
+    #scale data to have mean of 1. Don't think I need to worry about div by zero problems?
+    normalize = np.divide(data, mean)
+    
+    rescaled = np.multiply(rescaled, k_B * bin_width * Tn)
+    return rescaled
 
 def axion_power(B, f, delta, Q, Tnoise, C=0.5, beta=1, g=0.97, rho=0.45):
     """
