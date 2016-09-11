@@ -31,3 +31,5 @@ var/
 
 #specific files 
 *data_munging.py
+*.txt~
+*.py~
