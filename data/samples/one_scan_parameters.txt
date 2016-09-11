@@ -1,7 +1,1 @@
-[{'b_field': 1.6659966,
-  'cavity_top_temperature': 0.315685080617847,
-  'digitizer_log_reference': 368157,
-  'mode_frequency_channel_one': 697.594375,
-  'q_channel_one': 37205.033333424,
-  'squid_temperature': 0.321,
-  'timestamp': datetime.datetime(2016, 9, 10, 16, 41, 50, tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-420, name=None))}]
+[{"b_field": 1.6659966, "cavity_top_temperature": 0.315685080617847, "q_channel_one": 37205.033333424, "digitizer_log_reference": 368157, "squid_temperature": 1.67688519540374e+90, "mode_frequency_channel_one": 697.594375}]
