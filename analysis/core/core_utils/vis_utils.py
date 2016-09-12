@@ -14,7 +14,8 @@ plt.ticklabel_format(style='sci', axis='x', scilimits=(-1, 2))
 
 pltdir = '../../plots/'
 
-def plot_errorbars(X, Y, error=None, fit=None, start=1, caption=''):
+def plot_errorbars(X, Y, error=None, fit=None, label=None
+                   , start=1, caption=''):
     """
     Saves plot to disk:
     (1) Y vs X with error bars (optional) and fit superimposed (optional).
@@ -29,14 +30,15 @@ def plot_errorbars(X, Y, error=None, fit=None, start=1, caption=''):
         plt.ylabel('Power [Watts]')
 
     if error is not None:
-        plt.errorbar(X[start:], Yplot[start:], yerr=error[start:], fmt='o')
+        plt.errorbar(X[start:], Yplot[start:], yerr=error[start:],
+                     fmt='o', label=label)
     else:
-        plt.scatter(X[start:], Yplot[start:])
+        plt.scatter(X[start:], Yplot[start:], label=label)
 
     if fit is not None:
         plt.plot(X[start:], fit[start:], label='fit')
-        plt.legend()
-
+    
+    plt.legend()
     plt.xlabel('Frequency [MHz]')
 
     plt.grid(True)
@@ -87,7 +89,8 @@ def plot_overlay(freq_list, array_list, start=1, offset=0.7, caption=''):
                 bbox_inches='tight')
     plt.close()
 
-def plot_scan_with_hist(freq, residuals, start=1, caption=''):
+def plot_scan_with_hist(freq, residuals, prediction=None, start=1,
+                        label=None, caption=''):
     """
     Show the scatter plot of fluctations vs frequency as well as the distribution
     of the fluctuations. Working from this example:
@@ -103,13 +106,17 @@ def plot_scan_with_hist(freq, residuals, start=1, caption=''):
     rect2 = [left, bottom_h, width, 0.2] 
     rect3 = [left_h, bottom, 0.2, height]
     axScatter = plt.axes(rect1)
-    axScatter.scatter(freq[start:], residuals[start:] * 1.e21)
-    #axScatter.set_aspect(1.)
+    axScatter.scatter(freq[start:], residuals[start:] * 1.e21, label=label)
+
+    if prediction is not None:
+        axScatter.scatter(freq[start:], prediction[start:] * 1.e21,
+                          label='predicted signal')
+
     axScatter.set_xlabel('Frequency [MHz]')
     axScatter.set_ylabel('Power [zeptoWatts]')
+    axScatter.legend(scatterpoints=1)
 
-    nullfmt   = NullFormatter()         # no labels 
-
+    nullfmt   = NullFormatter()
     axHisty = plt.axes(rect3)#, sharey=axScatter)
 
     #formatting

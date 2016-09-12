@@ -23,16 +23,18 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     y = np.concatenate((firstvals, y, lastvals))
     return np.convolve( m[::-1], y, mode='valid')
 
-def lorentz(f, f_0, BW):
-    """Returns a lorentzian centered at f_0 with FWHM of  BW."""
-    return 1. / (1. + 4. * (f - f_0)**2 / BW**2)
+def lorentz(f, f_0, Q):
+    """Returns a lorentzian centered at f_0 with quality Q."""
+    FWHM = f_0 / float(Q)
+    return 1. / (1. + 4. * (f - f_0)**2 / FWHM**2)
 
 def mask_data(X, start=0, left=0, right=0, end=256):
     """Returns two columns of data cut on the wings and in the middle."""
     Xmask = np.concatenate((X[start:left], X[right:end]))
     return Xmask
 
-def axion_power(B, f_0, delta, Q, Tn, C=0.5, beta=1, g=0.97, rho=0.45):
+def axion_power(B, f_0, delta, Q, C=0.5, beta=1., g=0.97, rho=0.45,
+                V=0.0015):
     """
     Returns the expected axion power for the given experimental parameters.
     Taken following Gp Carosi's code, which in turn followed Ben Brubaker's
@@ -45,12 +47,22 @@ def axion_power(B, f_0, delta, Q, Tn, C=0.5, beta=1, g=0.97, rho=0.45):
     m_times_f = 0.006 # axion mass times scale constant in GeV**2
     hbar = 6.582122e-25 # GeV-sec
     mu = np.pi * 4.e-7 # permeability in kg m/charge**2
+    c = 3.e10 # cm / sec
 
-    V = 0.0015 # volume in m**3 (for ADMX 2014-16)
+#    V = 0.0015 # volume in m**3 (for ADMX 2014-16)
     omega = 2*np.pi*f_0*1.e6 # radians/sec assuming freq is given in MHz
+    FWHM = f_0 / float(Q)
 
     phenom_terms = (g * alpha / (np.pi * m_times_f))**2 * rho * (hbar * c)**3
-    physical_terms = omega / mu * B**2 * V * C * Q * beta / (1 + beta) 
-    off_resonance = 1 / (1 + (2 * delta)**2)
+    physical_terms = omega / mu * B**2 * V * C * Q * beta / (1. + beta) 
+    off_resonance = 1. / (1. + (2. * delta / FWHM)**2)
     axion_power = phenom_terms * physical_terms * off_resonance
     return axion_power # in watts
+
+if __name__ == "__main__":
+    #check that axion_power is giving benchmark results
+    print axion_power(9, 5000, 0, 12000, beta=1.4)
+    #should be 5.e-24
+
+    #check that lorentzian at peak is 1
+    print lorentz(5000, 5000, 12000)

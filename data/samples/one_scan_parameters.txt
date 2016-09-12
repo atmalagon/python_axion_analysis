@@ -1,1 +1,0 @@
-[{"b_field": 1.6659966, "cavity_top_temperature": 0.315685080617847, "q_channel_one": 37205.033333424, "digitizer_log_reference": 368157, "squid_temperature": 1.67688519540374e+90, "mode_frequency_channel_one": 697.594375}]

@@ -37,9 +37,6 @@ class Scan(object):
         # going on in the raw data that I need to account for?
         self.uncertainty = self.data / np.sqrt(self.num_averages)
 
-        self.axion = np.zeros(self.num_points)
-        self.snr = np.zeros(self.num_points)
-
         self.bad_data = 0
 
     def quality_cuts(self):
@@ -52,6 +49,9 @@ class Scan(object):
         for arr in [self.freq, self.data]:
             if len(self.freq) != self.num_points:
                 scan.bad_data = 1
+        
+        if np.mean(scan.data) < 1.e-9:
+            scan.bad_data = 1
 
     def rescale_scan(self, data):
         """                                                                               
@@ -70,14 +70,19 @@ class Scan(object):
         rescaled = normalize * (k_B * self.bin_width * 1.e6 * self.Tn)
         return rescaled
 
-    def weight_by_axion_array(self):
+    def create_axion_array(self):
         """
         Creates an array with the axion power * Lorentzian for the same frequencies
         as the scan.
         """
-        self.axion = np.array([lorentz(f, self.mode_f, self.bin_width) * 
-                               axion_power(self.B, self.mode_f, f - self.mode_f,
-                                           self.Q, self.Tn) for f in self.freq])
+        i = 0
+        axion = np.ones(self.num_points)
+        for f in self.freq:
+            response = lorentz(f, self.mode_f, self.Q)
+            on_resonance_pwr =axion_power(self.B, self.mode_f, f - self.mode_f, self.Q)
+            axion[i] = response * on_resonance_pwr
+            i+=1
+        return axion
 
     def process_scan(self):
         """
@@ -88,14 +93,11 @@ class Scan(object):
         if self.bad_data == 1:
             return
 
-        #(TODO) pass in mask limits into process_scan directly?
-        self.freq = mask_data(self.freq)
-
         # (TODO) really need to make rescale_scan a staticmethod
         # (TODO) why doesn't it update when I assign rescaled values to self.data an
         # self.uncertainty?
-        rescaled_data = self.rescale_scan(mask_data(self.data))
-        rescaled_uncertainty = self.rescale_scan(mask_data(self.uncertainty))
+        rescaled_data = self.rescale_scan(self.data)
+        rescaled_uncertainty = self.rescale_scan(self.uncertainty)
 
         return rescaled_data, rescaled_uncertainty
 
@@ -105,11 +107,22 @@ if __name__ == "__main__":
     spectrum_file = path + 'spectra/one_scan.npy'
     scan = Scan(param_file, spectrum_file)
 
-    # (TDOO) add autoscaling to plotting functions
-    plot_errorbars(scan.freq, scan.data, fit=scan.mean, caption='single_scan_with_fit')
-    plot_errorbars(scan.freq, scan.data, scan.uncertainty, fit=scan.mean, caption='single_scan')
+    #hack since all the sample data has broken sensor for squid temperature
+    scan.Tn = 0.9
 
+    # (TDOO) add autoscaling to plotting functions
+    plot_errorbars(scan.freq, scan.data, fit=scan.mean, start=4, caption='single_scan_with_fit')
+    plot_errorbars(scan.freq, scan.data, scan.uncertainty, fit=scan.mean, start=4, caption='single_scan')
+
+    scan.quality_cuts()
     rs_data, rs_uncertainty = scan.process_scan()
-    plot_errorbars(scan.freq, rs_data, rs_uncertainty, caption='kBT_rescaled_single_scan')
+    rs_mean = scan.rescale_scan(scan.mean)
+    plot_errorbars(scan.freq, rs_data, rs_uncertainty, start=4,
+                   label=scan.digitizer_id, caption='kBT_rescaled_single_scan')
     
-    plot_scan_with_hist(scan.freq, rs_data, start=4, caption='single_scan')
+    plot_scan_with_hist(scan.freq, rs_data, start=4,
+                        label=scan.digitizer_id, caption='single_scan')
+    axion = scan.create_axion_array()
+
+    #plot_scan_with_hist(scan.freq, rs_data, prediction=axion, start=4,
+#                        label=scan.digitizer_id, caption='prediction_single_scan')
