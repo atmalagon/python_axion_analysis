@@ -100,15 +100,16 @@ class Scan(object):
         return rescaled_data, rescaled_uncertainty
 
 if __name__ == "__main__":
-    path = '../../data/samples/'
-    param_file = path + 'one_scan_parameters.npy'
-    spectrum_file = path + 'one_scan.npy'
+    path = '../../data/samples/five_scans/'
+    param_file = path + 'parameters/one_scan_parameters.npy'
+    spectrum_file = path + 'spectra/one_scan.npy'
     scan = Scan(param_file, spectrum_file)
 
     # (TDOO) add autoscaling to plotting functions
-    plot_errorbars(scan.freq, scan.data, fit=scan.mean, caption='single_scan_with_fit', start=1)
-    plot_errorbars(scan.freq, scan.data, scan.uncertainty, fit=scan.mean, caption='single_scan', start=1)
+    plot_errorbars(scan.freq, scan.data, fit=scan.mean, caption='single_scan_with_fit')
+    plot_errorbars(scan.freq, scan.data, scan.uncertainty, fit=scan.mean, caption='single_scan')
 
     rs_data, rs_uncertainty = scan.process_scan()
-    plot_errorbars(scan.freq, rs_data, rs_uncertainty, caption='kBT_rescaled_single_scan',start=1)
+    plot_errorbars(scan.freq, rs_data, rs_uncertainty, caption='kBT_rescaled_single_scan')
     
+    plot_scan_with_hist(scan.freq, rs_data, start=4, caption='single_scan')
