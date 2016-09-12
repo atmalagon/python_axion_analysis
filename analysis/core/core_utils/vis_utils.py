@@ -11,11 +11,12 @@ from scipy.stats import norm
 matplotlib.style.use('ggplot')
 plt.rcParams['figure.figsize'] = (8, 6)
 plt.ticklabel_format(style='sci', axis='x', scilimits=(-1, 2))
+plt.ticklabel_format(style='sci', axis='y', scilimits=(-2, 2))
 
 pltdir = '../../plots/'
 
-def plot_errorbars(X, Y, error=None, fit=None, label=None
-                   , start=1, caption=''):
+def plot_errorbars(X, Y, error=None, fit=None, label=None,
+                   start=4, caption=''):
     """
     Saves plot to disk:
     (1) Y vs X with error bars (optional) and fit superimposed (optional).
@@ -31,19 +32,20 @@ def plot_errorbars(X, Y, error=None, fit=None, label=None
 
     if error is not None:
         plt.errorbar(X[start:], Yplot[start:], yerr=error[start:],
-                     fmt='o', label=label)
+                     label=label)
     else:
         plt.scatter(X[start:], Yplot[start:], label=label)
 
     if fit is not None:
         plt.plot(X[start:], fit[start:], label='fit')
     
-    plt.legend()
+    plt.legend(scatterpoints=1)
     plt.xlabel('Frequency [MHz]')
 
     plt.grid(True)
     plt.title(caption.replace('_', ' '))
 
+    plt.ylim([0.97* np.amin(Y[start:]), 1.03 * np.amax(Y[start:])])
     plt.savefig(pltdir + caption + '_start_' + str(start) + '.png', bbox_inches='tight')
     plt.close()
 
@@ -62,7 +64,7 @@ def plot_hist(pow_hist, set_bins=30, caption=''):
     plt.savefig(pltdir + caption + '_histogram.png', bbox_inches='tight')
     plt.close()
 
-def plot_overlay(freq_list, array_list, start=1, offset=0.7, caption=''):
+def plot_overlay(freq_list, array_list, start=4, offset=0.7, caption=''):
     """Plots multiple single scans, with some fixed vertical offset."""
     lift = 0
     min = np.inf
@@ -89,7 +91,7 @@ def plot_overlay(freq_list, array_list, start=1, offset=0.7, caption=''):
                 bbox_inches='tight')
     plt.close()
 
-def plot_scan_with_hist(freq, residuals, prediction=None, start=1,
+def plot_scan_with_hist(freq, residuals, prediction=None, start=4,
                         label=None, caption=''):
     """
     Show the scatter plot of fluctations vs frequency as well as the distribution
@@ -110,7 +112,7 @@ def plot_scan_with_hist(freq, residuals, prediction=None, start=1,
 
     if prediction is not None:
         axScatter.scatter(freq[start:], prediction[start:] * 1.e21,
-                          label='predicted signal')
+                          label='predicted signal', color='k')
 
     axScatter.set_xlabel('Frequency [MHz]')
     axScatter.set_ylabel('Power [zeptoWatts]')

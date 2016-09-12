@@ -21,7 +21,7 @@ class Scan(object):
         self.Tn = params['cavity_top_temperature'] + params['squid_temperature'] #Kelvin
         self.Q = params['q_channel_one']
         self.B = params['b_field'] #Tesla
-        self.digitizer_id = params['digitizer_log_reference']
+        self.id = params['digitizer_log_reference']
 
         self.num_averages = n_avg
         self.C = C
@@ -30,12 +30,7 @@ class Scan(object):
         self.freq = np.linspace(self.start, self.stop, self.num_points) #MHz
         self.data = np.array(spectrum['power_spectrum_channel_one']) #Watts
         # (TODO) make separate code that figures out which parameters minimize residuals.
-        self.mean = savitzky_golay(self.data, 11, 4)
-
-        # uncertainty is equal to power over sqrt avgs if the noise is Gaussian
-        # (TODO) I'm not sure this is right - is there some sort of pre-averaging
-        # going on in the raw data that I need to account for?
-        self.uncertainty = self.data / np.sqrt(self.num_averages)
+        self.fit = savitzky_golay(self.data, 11, 4)
 
         self.bad_data = 0
 
@@ -43,7 +38,7 @@ class Scan(object):
         """Flags data with poor experimental values."""
         # (TODO) test for isnumeric for params too
 
-        if scan.Q < 10000 | scan.B < 1.3 | scan.Tn > 1.3:
+        if (scan.Q < 10000) or (scan.B < 1.3) or (scan.Tn > 1.3):
             scan.bad_data = 1
 
         for arr in [self.freq, self.data]:
@@ -53,22 +48,27 @@ class Scan(object):
         if np.mean(scan.data) < 1.e-9:
             scan.bad_data = 1
 
-    def rescale_scan(self, data):
+    def get_residuals(self):
         """                                                                               
         Rescale data so that mean is at k_B * Tn * bin_width [Watts].                     
         data is an array of power values in Watts, Tn is a noise temperature              
         in Kelvin, and bin_width is the BW of each bin in Hz.                             
+        Return residuals (data - kTB) and uncertainties.
         """
-        #(TODO) should I be using a staticmethod here?
-
         k_B = 1.3806488e-23 # Watts/Hz/Kelvin                                             
 
-        #scale data to have mean of 1. Don't think I need to worry about 
-        #div by zero problems?                                                                                 
-        normalize = np.divide(data, self.mean)
+        kbt = (k_B * self.bin_width * 1.e6 * self.Tn)
+        sigma = kbt / np.sqrt(self.num_averages)
 
-        rescaled = normalize * (k_B * self.bin_width * 1.e6 * self.Tn)
-        return rescaled
+        #scale data to have mean of 1 in each bin.
+        #the fit is approximating the mean in each bin.
+        normalize = np.divide(self.data, self.fit)
+
+        #residuals are the fluctuations above mean of kbt
+        residuals = (normalize - 1) * kbt
+        uncertainties = np.full(len(residuals), sigma)
+
+        return residuals, uncertainties
 
     def create_axion_array(self):
         """
@@ -82,47 +82,48 @@ class Scan(object):
             on_resonance_pwr =axion_power(self.B, self.mode_f, f - self.mode_f, self.Q)
             axion[i] = response * on_resonance_pwr
             i+=1
+
         return axion
 
-    def process_scan(self):
+    def process_and_plot_scan(self):
         """
-        Cut irrelevant data, scale the power/uncertainty arrays to be at kBT.
+        Cut irrelevant data, scale the power to be at kBT.
+        Get fluctuations (power - kBT), and assign uncertainty:
+        kBT/sqrt(avgs).
         Finally, scale the power/uncertainties once more to be in units of axion
         power (KSVZ power * Lorentzian)
         """
+        self.quality_cuts()
+
         if self.bad_data == 1:
+            print 'data is bad.'
             return
 
-        # (TODO) really need to make rescale_scan a staticmethod
-        # (TODO) why doesn't it update when I assign rescaled values to self.data an
-        # self.uncertainty?
-        rescaled_data = self.rescale_scan(self.data)
-        rescaled_uncertainty = self.rescale_scan(self.uncertainty)
+        residuals, uncertainties = self.get_residuals()
+        axion = self.create_axion_array()
 
-        return rescaled_data, rescaled_uncertainty
+        #plot data with fit
+        plot_errorbars(self.freq, self.data, fit=self.fit, caption='single_scan_with_fit')
+
+        #plot residuals with their distribution in a hist on the side
+        plot_scan_with_hist(self.freq, residuals, label=self.id, caption='single_scan')
+
+        #also show the predicted axion power
+        plot_scan_with_hist(self.freq, residuals, prediction=axion, label=self.id,
+                            caption='prediction_single_scan')
+
 
 if __name__ == "__main__":
     path = '../../data/samples/five_scans/'
     param_file = path + 'parameters/one_scan_parameters.npy'
     spectrum_file = path + 'spectra/one_scan.npy'
+
     scan = Scan(param_file, spectrum_file)
 
     #hack since all the sample data has broken sensor for squid temperature
     scan.Tn = 0.9
 
-    # (TDOO) add autoscaling to plotting functions
-    plot_errorbars(scan.freq, scan.data, fit=scan.mean, start=4, caption='single_scan_with_fit')
-    plot_errorbars(scan.freq, scan.data, scan.uncertainty, fit=scan.mean, start=4, caption='single_scan')
-
-    scan.quality_cuts()
-    rs_data, rs_uncertainty = scan.process_scan()
-    rs_mean = scan.rescale_scan(scan.mean)
-    plot_errorbars(scan.freq, rs_data, rs_uncertainty, start=4,
-                   label=scan.digitizer_id, caption='kBT_rescaled_single_scan')
+    scan.process_and_plot_scan()
     
-    plot_scan_with_hist(scan.freq, rs_data, start=4,
-                        label=scan.digitizer_id, caption='single_scan')
-    axion = scan.create_axion_array()
 
-    #plot_scan_with_hist(scan.freq, rs_data, prediction=axion, start=4,
-#                        label=scan.digitizer_id, caption='prediction_single_scan')
+
