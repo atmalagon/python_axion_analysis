@@ -13,6 +13,7 @@ class Scan(object):
         self.start = spectrum['start_frequency_channel_one'] 
         self.stop = spectrum['stop_frequency_channel_one']
         self.span = self.stop - self.start
+        self.mode_f = params['mode_frequency_channel_one']
 
         self.num_points = spectrum['mixing_window_length']
         self.bin_width = self.span / self.num_points # in MHz
@@ -28,9 +29,12 @@ class Scan(object):
 
         self.freq = np.linspace(self.start, self.stop, self.num_points) #MHz
         self.data = np.array(spectrum['power_spectrum_channel_one']) #Watts
-        #(TODO) make separate code that figures out which parameters minimize residuals.
+        # (TODO) make separate code that figures out which parameters minimize residuals.
         self.mean = savitzky_golay(self.data, 11, 4)
-        #uncertainty is equal to power over sqrt avgs if the noise is Gaussian
+
+        # uncertainty is equal to power over sqrt avgs if the noise is Gaussian
+        # (TODO) I'm not sure this is right - is there some sort of pre-averaging
+        # going on in the raw data that I need to account for?
         self.uncertainty = self.data / np.sqrt(self.num_averages)
 
         self.axion = np.zeros(self.num_points)
@@ -71,10 +75,9 @@ class Scan(object):
         Creates an array with the axion power * Lorentzian for the same frequencies
         as the scan.
         """
-        center = self.start + self.span / 2.
-        self.axion = np.array([lorentz(f, center, self.bin_width) * 
-                               axion_power(self.B, center, f - center, self.Q,
-                                           self.Tn) for f in self.freq])
+        self.axion = np.array([lorentz(f, self.mode_f, self.bin_width) * 
+                               axion_power(self.B, self.mode_f, f - self.mode_f,
+                                           self.Q, self.Tn) for f in self.freq])
 
     def process_scan(self):
         """
@@ -101,9 +104,11 @@ if __name__ == "__main__":
     param_file = path + 'one_scan_parameters.npy'
     spectrum_file = path + 'one_scan.npy'
     scan = Scan(param_file, spectrum_file)
-    print scan.data[:10]
-#    print scan.rescale_scan(scan.data)[:10]
-#    plot_errorbars(scan.freq, scan.data, scan.uncertainty, fit=scan.mean, caption='single_scan')
+
+    # (TDOO) add autoscaling to plotting functions
+    plot_errorbars(scan.freq, scan.data, fit=scan.mean, caption='single_scan_with_fit', start=1)
+    plot_errorbars(scan.freq, scan.data, scan.uncertainty, fit=scan.mean, caption='single_scan', start=1)
+
     rs_data, rs_uncertainty = scan.process_scan()
-    plot_errorbars(scan.freq, rs_data, rs_uncertainty, caption='kBT_rescaled_single_scan')
+    plot_errorbars(scan.freq, rs_data, rs_uncertainty, caption='kBT_rescaled_single_scan',start=1)
     
