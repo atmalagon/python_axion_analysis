@@ -72,7 +72,7 @@ def plot_overlay(freq_list, array_list, start=4, offset=0.7, caption=''):
     freq_left = np.inf
     freq_right = -np.inf
     assert len(freq_list) == len(array_list)
-    colors = cm.rainbow(np.linspace(0, 1, len(array_list)))
+    colors = cm.jet(np.linspace(0, 1, len(array_list)))
     frame = plt.gca()
 
     avg_value = np.mean(array_list[0])

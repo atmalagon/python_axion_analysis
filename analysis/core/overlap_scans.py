@@ -25,7 +25,6 @@ if __name__ == "__main__":
         if scan.mode_f != 696.91:
             array_list.append(scan.data)
             freq_list.append(scan.freq)
-            print scan.mode_f
 
     plot_overlay(freq_list, array_list, start=1, offset=0.7, caption='ninetynine_scans')
     

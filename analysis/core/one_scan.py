@@ -29,8 +29,12 @@ class Scan(object):
 
         self.freq = np.linspace(self.start, self.stop, self.num_points) #MHz
         self.data = np.array(spectrum['power_spectrum_channel_one']) #Watts
-        # (TODO) make separate code that figures out which parameters minimize residuals.
-        self.fit = savitzky_golay(self.data, 11, 4)
+
+        #leastsquares 3rd order polynomial fit
+        fit_coeff, error, _, _, _ = np.polyfit(self.freq, self.data, 3, full=True)
+        print fit_coeff
+
+        self.fit = np.polyval(fit_coeff, self.freq)
 
         self.bad_data = 0
 
