@@ -2,10 +2,11 @@ import numpy as np
 
 from core_utils.features import *
 from core_utils.vis_utils import *
+from core_utils.fit_utils import *
 
 
 class Scan(object):
-    def __init__(self, param_file, spectrum_file, n_avg=1, C=0.5, beta=1):
+    def __init__(self, param_file, spectrum_file, n_avg=1, C=0.5, beta=1, deg=3):
         params = np.load(param_file).item()            
         spectrum = np.load(spectrum_file).item()
 
@@ -30,13 +31,21 @@ class Scan(object):
         self.freq = np.linspace(self.start, self.stop, self.num_points) #MHz
         self.data = np.array(spectrum['power_spectrum_channel_one']) #Watts
 
-        #leastsquares 3rd order polynomial fit
-        fit_coeff, error, _, _, _ = np.polyfit(self.freq, self.data, 3, full=True)
-        print fit_coeff
-
-        self.fit = np.polyval(fit_coeff, self.freq)
-
+        self.fit = np.array([])
         self.bad_data = 0
+
+    def compute_fit(self, model=simplex_fit, deg=5):
+        """
+        Choose fit to use from fit_utils: simplex_fit, leastsq_fit,
+        poly_fit.
+        All models try to fit a polynomial of degree = deg to the data,
+        but they have different minimization strategies.
+        """
+
+        #(TODO) allow self.uncertainty to be passed in too
+        fit = model(self.freq, self.data, deg)
+        
+        return fit
 
     def quality_cuts(self):
         """Flags data with poor experimental values."""
@@ -52,7 +61,7 @@ class Scan(object):
         if np.mean(scan.data) < 1.e-9:
             scan.bad_data = 1
 
-    def get_residuals(self):
+    def get_residuals(self, fit):
         """                                                                               
         Rescale data so that mean is at k_B * Tn * bin_width [Watts].                     
         data is an array of power values in Watts, Tn is a noise temperature              
@@ -66,7 +75,7 @@ class Scan(object):
 
         #scale data to have mean of 1 in each bin.
         #the fit is approximating the mean in each bin.
-        normalize = np.divide(self.data, self.fit)
+        normalize = np.divide(self.data, np.array(fit))
 
         #residuals are the fluctuations above mean of kbt
         residuals = (normalize - 1) * kbt
@@ -89,7 +98,7 @@ class Scan(object):
 
         return axion
 
-    def process_and_plot_scan(self):
+    def process_and_plot_scan(self, model=simplex_fit, deg=5):
         """
         Cut irrelevant data, scale the power to be at kBT.
         Get fluctuations (power - kBT), and assign uncertainty:
@@ -103,11 +112,12 @@ class Scan(object):
             print 'data is bad.'
             return
 
-        residuals, uncertainties = self.get_residuals()
+        baseline = self.compute_fit(model, deg)
+        residuals, uncertainties = self.get_residuals(baseline)
         axion = self.create_axion_array()
 
         #plot data with fit
-        plot_errorbars(self.freq, self.data, fit=self.fit, caption='single_scan_with_fit')
+        plot_errorbars(self.freq, self.data, fit=baseline, caption='single_scan_with_fit')
 
         #plot residuals with their distribution in a hist on the side
         plot_scan_with_hist(self.freq, residuals, label=self.id, caption='single_scan')
@@ -122,12 +132,13 @@ if __name__ == "__main__":
     param_file = path + 'parameters/one_scan_parameters.npy'
     spectrum_file = path + 'spectra/one_scan.npy'
 
+
     scan = Scan(param_file, spectrum_file)
 
     #hack since all the sample data has broken sensor for squid temperature
     scan.Tn = 0.9
 
-    scan.process_and_plot_scan()
+    scan.process_and_plot_scan(model=leastsq_fit, deg=1)
     
 
 
