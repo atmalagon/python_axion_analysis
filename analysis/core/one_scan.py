@@ -34,7 +34,7 @@ class Scan(object):
         self.fit = np.array([])
         self.bad_data = 0
 
-    def compute_fit(self, model=simplex_fit, deg=5):
+    def compute_fit(self, model=poly_fit, deg=2):
         """
         Choose fit to use from fit_utils: simplex_fit, leastsq_fit,
         poly_fit.
@@ -43,9 +43,9 @@ class Scan(object):
         """
 
         #(TODO) allow self.uncertainty to be passed in too
-        fit = model(self.freq, self.data, deg)
+        fit_values, coeffs = model(self.freq, self.data, deg)
         
-        return fit
+        return fit_values
 
     def quality_cuts(self):
         """Flags data with poor experimental values."""
@@ -98,7 +98,7 @@ class Scan(object):
 
         return axion
 
-    def process_and_plot_scan(self, model=simplex_fit, deg=5):
+    def process_and_plot_scan(self, model=None, deg=5):
         """
         Cut irrelevant data, scale the power to be at kBT.
         Get fluctuations (power - kBT), and assign uncertainty:
@@ -112,12 +112,22 @@ class Scan(object):
             print 'data is bad.'
             return
 
-        baseline = self.compute_fit(model, deg)
+        if model is None:
+            #use filter instead of fit for ease of illustrating plots
+            baseline = savitzky_golay(self.data, 27, 3)
+        elif model in [leastsq_fit, simplex_fit, poly_fit]:
+            baseline = self.compute_fit(model, deg)
+        else:
+            print 'model not supported.'
+            return
+
         residuals, uncertainties = self.get_residuals(baseline)
         axion = self.create_axion_array()
 
-        #plot data with fit
-        plot_errorbars(self.freq, self.data, fit=baseline, caption='single_scan_with_fit')
+        #plot data with fit - (TODO) when using savitzky-golay filter, need to
+        #cut out data as edge effects are prominent up to window_size / 2.
+        plot_errorbars(self.freq, self.data,
+                       fit=baseline, caption='single_scan_with_fit')
 
         #plot residuals with their distribution in a hist on the side
         plot_scan_with_hist(self.freq, residuals, label=self.id, caption='single_scan')
@@ -138,7 +148,7 @@ if __name__ == "__main__":
     #hack since all the sample data has broken sensor for squid temperature
     scan.Tn = 0.9
 
-    scan.process_and_plot_scan(model=leastsq_fit, deg=1)
+    scan.process_and_plot_scan()
     
 
 

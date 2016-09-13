@@ -2,6 +2,13 @@ import numpy as np
 from math import factorial
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
+    """
+    From the Scipy cookbook: https://scipy.github.io/old-wiki/
+    pages/Cookbook/SavitzkyGolay. There is now a scipy.signal.savgol_filter
+    implementation. This is a way to empirically get the baseline of the data
+    as opposed to a polynomial fit, which sometimes fails for reasons I
+    don't understand.
+    """
     try:
         window_size = np.abs(np.int(window_size))
         order = np.abs(np.int(order))

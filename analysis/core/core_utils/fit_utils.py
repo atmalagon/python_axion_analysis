@@ -52,7 +52,6 @@ def  poly_fit(x, y, deg=5):
     """
     fit_params = np.polyfit(x, y, deg)
     y_new = np.polyval(fit_params, x)
-
     return y_new, fit_params
 
 def leastsq_fit(x, y, deg=5):
@@ -61,11 +60,11 @@ def leastsq_fit(x, y, deg=5):
     algorithm, which is a modified Levenberg-Marquardt alg.
     """
     #parametric function of degree deg with c a list of the
-    #parameters. Note the order is x then c!
-    def fp(c, x):
-        output = 0
-        for i, coeff in enumerate(c):
-            output += coeff * x**i
+    #parameters. Note if using curve_fit: the order is x then c!
+    def fp(x, *c):
+        output = np.zeros(len(x))
+        for i in range(len(c)):
+            output += c[i] * np.power(x, i)
         return output
 
     #error function whose square will be minimized by leastsq
@@ -79,25 +78,27 @@ def leastsq_fit(x, y, deg=5):
     #(TODO) should I scale the data to 1? I've heard curve_fit
     #has an easier time if data is not extremely small or large.
 
-    fit_params, cov = optimize.leastsq(e, guess, args=(x,y))
-    
-    return fp(fit_params, x), fit_params
+    fit_params, cov = optimize.curve_fit(fp, x, y, guess)
+
+    #fit_params, cov = optimize.leastsq(e, guess, args=(x,y))
+    return fp(x, *fit_params), fit_params
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
 
-    order = 2
+    order = 5
+    scale = 1.e-5
     #test out a known polynomial of degree = order
-    x = np.linspace(6.e8, 6.001e8, 30)
+    x = np.linspace(0, 1, 30)
     fp = lambda c, x: sum((x**i) * coeff for i, coeff
                           in enumerate(c))
-    scale = 1.e-5
     real_p = np.random.rand(3)
     y = fp(real_p, x) + np.random.normal(0, 0.05, 30)
+    y = y*scale
 
-    plt.plot(x, y*scale, 'bo')
-    for func in [simplex_fit, poly_fit]:
-        result, params = func(x, y*scale, deg=order)
+    plt.plot(x, y, 'bo')
+    for func in [leastsq_fit]:
+        result, params = func(x, y, deg=order)
         plt.plot(x, result, label=str(func).split('_')[0])
         print params
 
