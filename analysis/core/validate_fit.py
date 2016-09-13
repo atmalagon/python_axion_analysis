@@ -20,15 +20,16 @@ def calculate_filter_rms(y, window, order=3):
     fig_cross_val_C.html
     """
     filter = savitzky_golay(y, window, order)
-    err = np.sqrt(np.sum( (filter - y) ** 2) / len(y))
+    err = np.sqrt(np.sum( (filter[window:] - y[window:]) ** 2) 
+                  / len(y[window:]))
 
-    return err
+    return filter, err
 
 path = '../../data/samples/ninetynine_scans/'
 param_files = sorted(glob.glob(path+'/parameters/*'), key=os.path.getmtime)
 spectrum_files = sorted(glob.glob(path+'/spectra/*'), key=os.path.getmtime)
 
-windows = np.arange(11, 35, 2)
+windows = np.arange(7, 55, 2)
 
 fig = plt.figure(figsize=(8, 6))
 
@@ -43,13 +44,21 @@ for order, subplot in zip([2, 3, 4], [311, 312, 313]):
     y_train = y_interp(mask)
 
     for i, window in enumerate(windows):
-        train_err[i] = calculate_filter_rms(y_train, window, order)
+        filter, train_err[i] = calculate_filter_rms(y_train, window, order)
 
-    ax.plot(windows, train_err, label='order {}'.format(order))
-    ax.legend(loc=2)
+        intrinsic_err = [np.std(scan.data[:10])/np.sqrt(10)]*len(windows)
+    import ipdb
+    ipdb.set_trace()
+    ax.plot(scan.freq[window:], filter[window:])
+    ax.plot(scan.freq[window:], y_train[window:])
+    #ax.plot(windows, train_err, label='order {}'.format(order))
+    #ax.plot(windows, intrinsic_err)
+    #ax.legend(loc=2)
+    plt.setp(ax.get_xticklabels()[:1], visible=False)
+    plt.setp(ax.get_xticklines()[:1], visible=False)
 
-ax.set_xlabel('window size of filter')
-ax.set_ylabel('rms error')
+#plt.xlabel('window size of filter')
+#plt.ylabel('rms error')
 
 
 plt.show()

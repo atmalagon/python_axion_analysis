@@ -1,5 +1,28 @@
 import numpy as np
+import scipy as sp
+
 from math import factorial
+
+def baseline_als(y, lam, p, niter=10):
+    """
+    Asymmetric least squares smoothing. From
+    https://stackoverflow.com/questions/29156532/
+    python-baseline-correction-library.
+    y is the data, lam (for lambda) is the weight given
+    for how strong you want smoothing to be (usually 100
+    to 1.e9); p says how strongly you care about asymmetry 
+    (generally 0.001 to 0.1). niter is the number of iterations,
+    computing new weights.
+    """
+    L = len(y)
+    D = sp.sparse.csc_matrix(np.diff(np.eye(L), 2))
+    w = np.ones(L)
+    for i in xrange(niter):
+        W = sp.sparse.spdiags(w, 0, L, L)
+        Z = W + lam * D.dot(D.transpose())
+        z = sp.sparse.linalg.spsolve(Z, w*y)
+        w = p * (y > z) + (1-p) * (y < z)
+    return z
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     """

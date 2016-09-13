@@ -114,7 +114,8 @@ class Scan(object):
 
         if model is None:
             #use filter instead of fit for ease of illustrating plots
-            baseline = savitzky_golay(self.data, 27, 3)
+            #baseline = savitzky_golay(self.data, 27, 3)
+            baseline = baseline_als(self.data, 200, 0.4, 10)
         elif model in [leastsq_fit, simplex_fit, poly_fit]:
             baseline = self.compute_fit(model, deg)
         else:
