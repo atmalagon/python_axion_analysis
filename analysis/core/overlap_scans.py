@@ -53,24 +53,24 @@ class Overlapped_Scans(object):
                     self.total[idx] = (temp + gsquared[j] / err[j]**2)
                     self.total[idx] /= self.weights[idx]
         
-    def plot_total(self):
+    def plot_total(self, caption):
         """
         Plot the output and produce a limit plot.
         """
         idx = np.arange(20, len(self.all_freqs) - 10)
-        plot_gsquared(self.all_freqs[idx], self.total[idx], caption='total_scans')
+        plot_gsquared(self.all_freqs[idx], self.total[idx], caption=caption)
 
 
 if __name__ == "__main__":
-    path = '../../data/samples/ninetynine_scans'
+    path = '../../data/eng_run'
     p, s = load_test_files(path)
     scan_first = Scan(p[0], s[0])
-    scan_last = Scan(p[-1], s[-1])
 
-    combined = Overlapped_Scans(scan_first.start, scan_last.stop, scan_first.bin_width)
+    combined = Overlapped_Scans(696.69278879272, 697.71158285522, scan_first.bin_width)
     combined.walk_through_files(p, s)
-    combined.plot_total()
+    combined.plot_total(caption='eng_run_gsquared')
 
+#    path = '../../data/samples/ninetynine_scans'
 #    freq_list = []
 #    array_list = []
 #    for param_file, spectrum_file in zip(param_files[3:], spectrum_files[3:]):
