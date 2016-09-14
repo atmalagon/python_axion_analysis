@@ -3,28 +3,81 @@ import os
 
 import numpy as np
 
+from core_utils.vis_utils import plot_overlay, plot_gsquared
+from core_utils.data_utils import load_test_files
 from one_scan import Scan
-from core_utils.vis_utils import plot_overlay
 
 
-# (TODO) implement this class
-# class Overlapped_Scans(Scan):
+class Overlapped_Scans(object):
+    """"
+    This class stitches together the gsquared measurements
+    from multiple scans, where the stitching is done by
+    a weighted average. The weights are 1/err^2. I followed
+    Gray's procedure for this.
+    """
+    def __init__(self, start, stop, bin_width):
+        self.start = start
+        self.bin_width = bin_width
+        self.all_freqs = np.arange(start, stop, bin_width)
+        bins = len(self.all_freqs)
+        self.total = np.zeros(bins)
+        self.weights = np.zeros(bins)
+
+    def walk_through_files(self, param_files, spectrum_files):
+        for p, s in zip(param_files, spectrum_files):
+            scan = Scan(p, s)
+            scan.Tn = 0.66 #hack because test data had wonky sensor reading
+
+            result = scan.process_and_plot_scan(plots_on=False)
+            if not result:
+                #go to next scan if this scan didn't produce a result.
+                continue
+
+            gsquared, err = result
+            assert len(gsquared) == len(err)
+
+            index = (scan.start - self.start) // self.bin_width
+
+            for j in range(len(gsquared)):
+                idx = int(index) + j
+                if self.weights[idx] == 0:
+                    #if there was nothing there, fill in
+                    #value for gsquared and weight.
+                    self.total[idx] = gsquared[j]
+                    self.weights[idx] = 1 / err[j]**2
+                else:
+                    #do a weighted sum, with weights given by
+                    #1/err^2, and normalized by sum of weights.
+                    temp = self.weights[idx] * self.total[idx]
+                    self.weights[idx] += 1 / err[j]**2
+                    self.total[idx] = (temp + gsquared[j] / err[j]**2)
+                    self.total[idx] /= self.weights[idx]
+        
+    def plot_total(self):
+        """
+        Plot the output and produce a limit plot.
+        """
+        idx = np.arange(20, len(self.all_freqs) - 10)
+        plot_gsquared(self.all_freqs[idx], self.total[idx], caption='total_scans')
 
 
 if __name__ == "__main__":
+    path = '../../data/samples/ninetynine_scans'
+    p, s = load_test_files(path)
+    scan_first = Scan(p[0], s[0])
+    scan_last = Scan(p[-1], s[-1])
 
-    #sort by modification time
-    param_files = sorted(glob.glob('../../data/samples/ninetynine_scans/parameters/*'), key=os.path.getmtime)
-    spectrum_files = sorted(glob.glob('../../data/samples/ninetynine_scans/spectra/*'), key=os.path.getmtime)
+    combined = Overlapped_Scans(scan_first.start, scan_last.stop, scan_first.bin_width)
+    combined.walk_through_files(p, s)
+    combined.plot_total()
 
+#    freq_list = []
+#    array_list = []
+#    for param_file, spectrum_file in zip(param_files[3:], spectrum_files[3:]):
+#        scan = Scan(param_file, spectrum_file)
+#        if scan.mode_f != 696.91:
+#            array_list.append(scan.data)
+#            freq_list.append(scan.freq)
 
-    freq_list = []
-    array_list = []
-    for param_file, spectrum_file in zip(param_files[3:], spectrum_files[3:]):
-        scan = Scan(param_file, spectrum_file)
-        if scan.mode_f != 696.91:
-            array_list.append(scan.data)
-            freq_list.append(scan.freq)
-
-    plot_overlay(freq_list, array_list, start=1, offset=0.7, caption='ninetynine_scans')
+#    plot_overlay(freq_list, array_list, start=1, offset=0.7, caption='ninetynine_scans')
     

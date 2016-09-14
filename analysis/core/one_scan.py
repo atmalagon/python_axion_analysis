@@ -51,15 +51,15 @@ class Scan(object):
         """Flags data with poor experimental values."""
         # (TODO) test for isnumeric for params too
 
-        if (scan.Q < 10000) or (scan.B < 1.3) or (scan.Tn > 1.3):
-            scan.bad_data = 1
+        if (self.Q < 10000) or (self.B < 1.3) or (self.Tn > 1.3):
+            self.bad_data = 1
 
         for arr in [self.freq, self.data]:
             if len(self.freq) != self.num_points:
-                scan.bad_data = 1
+                self.bad_data = 1
         
-        if np.mean(scan.data) < 1.e-9:
-            scan.bad_data = 1
+        if np.mean(self.data) < 1.e-6:
+            self.bad_data = 1
 
     def get_residuals(self, fit):
         """                                                                               
@@ -98,7 +98,7 @@ class Scan(object):
 
         return axion
 
-    def process_and_plot_scan(self, model=None, deg=5):
+    def process_and_plot_scan(self, plots_on=True, model=None, deg=5):
         """
         Cut irrelevant data, scale the power to be at kBT.
         Get fluctuations (power - kBT), and assign uncertainty:
@@ -109,7 +109,7 @@ class Scan(object):
         self.quality_cuts()
 
         if self.bad_data == 1:
-            print 'data is bad.'
+            print '{}: data is bad.'.format(self.id)
             return
 
         if model is None:
@@ -125,34 +125,33 @@ class Scan(object):
         residuals, kbt, uncertainties = self.get_residuals(baseline)
         axion = self.create_axion_array()
 
-        #following Gray's procedure, divide residuals by axion power
+        #following Gray's procedure, divide residuals and errors  by axion power
         #and multiply by g_KSVZ^2 to get measured g^2.
 
         g_ksvz_squared = np.array([g_a2gamma_ksvz(f*1.e6)**2 for f in self.freq])
         g_squared = np.divide(residuals, axion) * g_ksvz_squared
-        print np.mean(residuals)
-        print np.mean(axion)
-        print np.mean(g_ksvz_squared)
-        print np.mean(g_squared)
+        err = np.divide(uncertainties, axion) * g_ksvz_squared
 
-        #plot data with fit - (TODO) when using savitzky-golay filter, need to
-        #cut out data as edge effects are prominent up to window_size / 2.
+        if plots_on:
+            #plot data with fit - (TODO) when using savitzky-golay filter, need to
+            #cut out data as edge effects are prominent up to window_size / 2.
 
-        idx=np.arange(15, self.num_points -7)
+            idx=np.arange(15, self.num_points -7)
 
-        plot_errorbars(self.freq[idx], self.data[idx], fit=baseline[idx],
-                       caption='single_scan_with_fit')
+            plot_errorbars(self.freq[idx], self.data[idx], fit=baseline[idx],
+                           caption='single_scan_with_fit')
 
-        #plot the scan's sensitivity to measured g_a2gamma^2.
-        plot_gsquared(self.freq[idx], g_squared[idx], caption='single_scan_g_squared_sensitivity')
+            #plot the scan's sensitivity to measured g_a2gamma^2.
+            plot_gsquared(self.freq[idx], g_squared[idx], caption='single_scan_g_squared_sensitivity')
 
-        #plot residuals with their distribution in a hist on the side
-        plot_scan_with_hist(self.freq[idx], residuals[idx], label=self.id, caption='single_scan')
+            #plot residuals with their distribution in a hist on the side
+            plot_scan_with_hist(self.freq[idx], residuals[idx], label=self.id, caption='single_scan')
 
-        #also show the predicted axion power
-        plot_scan_with_hist(self.freq[idx], residuals[idx], prediction=axion[idx], label=self.id,
-                            caption='prediction_single_scan')
+            #also show the predicted axion power
+            plot_scan_with_hist(self.freq[idx], residuals[idx], prediction=axion[idx], label=self.id,
+                                caption='prediction_single_scan')
 
+        return g_squared, err
 
 if __name__ == "__main__":
     path = '../../data/samples/five_scans/'
@@ -163,7 +162,7 @@ if __name__ == "__main__":
     scan = Scan(param_file, spectrum_file)
 
     #hack since all the sample data has broken sensor for squid temperature
-    scan.Tn = 0.9
+    scan.Tn = 0.66
 
     scan.process_and_plot_scan()
     

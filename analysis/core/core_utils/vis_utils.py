@@ -10,7 +10,7 @@ from scipy.stats import norm
 
 matplotlib.style.use('ggplot')
 plt.rcParams['figure.figsize'] = (8, 6)
-plt.ticklabel_format(style='sci', axis='x', scilimits=(-1, 2))
+plt.ticklabel_format(style='sci', axis='x', scilimits=(-2, 2))
 plt.ticklabel_format(style='sci', axis='y', scilimits=(-2, 2))
 
 pltdir = '../../plots/'
@@ -52,7 +52,7 @@ def plot_gsquared(x, gsquared, label=None, caption=''):
     plt.scatter(x, gsquared, label=None)
 
     plt.xlabel('Frequency [MHz]')
-    plt.ylabel('$g_{a\gamma\gamma}^2$ [1/$\text{GeV}^2$]')
+    plt.ylabel('$g_{a\gamma\gamma}^2$ [1/GeV^2]')
     plt.grid(True)
     plt.title(caption.replace('_', ' '))
 
