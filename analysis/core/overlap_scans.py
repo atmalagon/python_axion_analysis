@@ -54,12 +54,25 @@ class Overlapped_Scans(object):
                     self.total[idx] /= self.weights[idx]
         
     def plot_total(self, caption):
-        """
-        Plot the output and produce a limit plot.
-        """
+        """Plot the output gsquared values.."""
         idx = np.arange(20, len(self.all_freqs) - 10)
         plot_gsquared(self.all_freqs[idx], self.total[idx], caption=caption)
+        
+        candidates = []
+        position = []
+        mask = []
+        for i, val in enumerate(self.total):
+            if val > 5 * self.weights[i]:
+                candidates.append(val)
+                position.append(i)
+                mask.append(False)
+            else:
+                mask.append(True)
 
+        mask = np.array(mask)
+        print len(outliers)
+        plot_gsquared(self.all_freqs[mask], self.total[mask], caption='total_candidates_removed')
+        return position, candidates
 
 if __name__ == "__main__":
     path = '../../data/eng_run'
@@ -68,8 +81,10 @@ if __name__ == "__main__":
 
     combined = Overlapped_Scans(696.69278879272, 697.71158285522, scan_first.bin_width)
     combined.walk_through_files(p, s)
-    combined.plot_total(caption='eng_run_gsquared')
-
+    position, candidates = combined.plot_total(caption='eng_run_gsquared')
+    with open('../../data/candidates.txt', 'w') as file:
+        print >> file, position, candidates
+    print len(position)
 #    path = '../../data/samples/ninetynine_scans'
 #    freq_list = []
 #    array_list = []
