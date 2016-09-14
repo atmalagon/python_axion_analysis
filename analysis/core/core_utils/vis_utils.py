@@ -15,29 +15,27 @@ plt.ticklabel_format(style='sci', axis='y', scilimits=(-2, 2))
 
 pltdir = '../../plots/'
 
-def plot_errorbars(X, Y, error=None, fit=None, label=None,
-                   start=4, caption=''):
+def plot_errorbars(X, Y, error=None, fit=None, label=None, caption=''):
     """
     Saves plot to disk:
     (1) Y vs X with error bars (optional) and fit superimposed (optional).
     Can also choose starting point of data to plot (starts from beginning of
     input array by default.)
     """
-    if Y[start] < 1.e-20:
-        Yplot = Y * 1.e21
-        plt.ylabel('Power [zeptoWatts]')
+    if np.mean(Y) < 1.e-20:
+        Yplot = Y * 1.e24
+        plt.ylabel('Power [yoctoWatts]')
     else:
         Yplot = Y
         plt.ylabel('Power [Watts]')
 
     if error is not None:
-        plt.errorbar(X[start:], Yplot[start:], yerr=error[start:],
-                     label=label)
+        plt.errorbar(X, Yplot, yerr=error,label=label)
     else:
-        plt.scatter(X[start:], Yplot[start:], label=label)
+        plt.scatter(X, Yplot, label=label)
 
     if fit is not None:
-        plt.plot(X[start:], fit[start:], label='fit')
+        plt.plot(X, fit, label='fit')
     
     plt.legend(scatterpoints=1)
     plt.xlabel('Frequency [MHz]')
@@ -45,8 +43,8 @@ def plot_errorbars(X, Y, error=None, fit=None, label=None,
     plt.grid(True)
     plt.title(caption.replace('_', ' '))
 
-    plt.ylim([0.97* np.amin(Y[start:]), 1.03 * np.amax(Y[start:])])
-    plt.savefig(pltdir + caption + '_start_' + str(start) + '.png', bbox_inches='tight')
+    plt.ylim([0.97* np.amin(Yplot), 1.03 * np.amax(Yplot)])
+    plt.savefig(pltdir + caption + '.png', bbox_inches='tight')
     plt.close()
 
 
@@ -64,7 +62,7 @@ def plot_hist(pow_hist, set_bins=30, caption=''):
     plt.savefig(pltdir + caption + '_histogram.png', bbox_inches='tight')
     plt.close()
 
-def plot_overlay(freq_list, array_list, start=4, offset=0.7, caption=''):
+def plot_overlay(freq_list, array_list, offset=0.7, caption=''):
     """Plots multiple single scans, with some fixed vertical offset."""
     lift = 0
     min = np.inf
@@ -77,7 +75,7 @@ def plot_overlay(freq_list, array_list, start=4, offset=0.7, caption=''):
 
     avg_value = np.mean(array_list[0])
     for freq, spectrum, c in zip(freq_list, array_list, colors):
-        plt.scatter(freq[start:], spectrum[start:] + lift, color=c)
+        plt.scatter(freq, spectrum + lift, color=c)
         lift += offset * avg_value # go up by some percent of the avg pwr
         
     plt.xlim([np.amin(freq_list), np.amax(freq_list)])
@@ -87,12 +85,11 @@ def plot_overlay(freq_list, array_list, start=4, offset=0.7, caption=''):
     frame.axes.get_yaxis().set_visible(False)
     #plt.title(caption.replace('_', ' '))
 
-    plt.savefig(pltdir + 'overlay_' + caption + '_start_' + str(start) + '.png',
+    plt.savefig(pltdir + 'overlay_' + caption + '.png',
                 bbox_inches='tight')
     plt.close()
 
-def plot_scan_with_hist(freq, residuals, prediction=None, start=4,
-                        label=None, caption=''):
+def plot_scan_with_hist(freq, residuals, prediction=None, label=None, caption=''):
     """
     Show the scatter plot of fluctations vs frequency as well as the distribution
     of the fluctuations. Working from this example:
@@ -108,14 +105,14 @@ def plot_scan_with_hist(freq, residuals, prediction=None, start=4,
     rect2 = [left, bottom_h, width, 0.2] 
     rect3 = [left_h, bottom, 0.2, height]
     axScatter = plt.axes(rect1)
-    axScatter.scatter(freq[start:], residuals[start:] * 1.e21, label=label)
+    axScatter.scatter(freq, residuals* 1.e24, label=label)
 
     if prediction is not None:
-        axScatter.scatter(freq[start:], prediction[start:] * 1.e21,
+        axScatter.scatter(freq, prediction * 1.e24,
                           label='predicted signal', color='k')
 
     axScatter.set_xlabel('Frequency [MHz]')
-    axScatter.set_ylabel('Power [zeptoWatts]')
+    axScatter.set_ylabel('Power [yoctooWatts]')
     axScatter.legend(scatterpoints=1)
 
     nullfmt   = NullFormatter()
@@ -128,12 +125,11 @@ def plot_scan_with_hist(freq, residuals, prediction=None, start=4,
     plt.setp(axHisty.get_yticklabels(), visible=False)
     axHisty.yaxis.set_tick_params(size=0)
 
-    axHisty.hist(residuals[start:] * 1.e21, bins=30, orientation='horizontal')
+    axHisty.hist(residuals * 1.e24, bins=30, orientation='horizontal')
 
     axHisty.set_ylim( axScatter.get_ylim() )
     for tl in axHisty.get_yticklabels():
         tl.set_visible(False)
 
-    plt.savefig(pltdir + 'scanhist_' + caption + '_start_' + str(start) 
-                + '.png', bbox_inches='tight')
+    plt.savefig(pltdir + 'scanhist_' + caption + '.png', bbox_inches='tight')
     plt.close()

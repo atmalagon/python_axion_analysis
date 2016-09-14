@@ -127,14 +127,16 @@ class Scan(object):
 
         #plot data with fit - (TODO) when using savitzky-golay filter, need to
         #cut out data as edge effects are prominent up to window_size / 2.
-        plot_errorbars(self.freq, self.data,
-                       fit=baseline, caption='single_scan_with_fit')
+
+        idx=np.arange(15, self.num_points -7)
+        plot_errorbars(self.freq[idx], self.data[idx],
+                       fit=baseline[idx], caption='single_scan_with_fit')
 
         #plot residuals with their distribution in a hist on the side
-        plot_scan_with_hist(self.freq, residuals, label=self.id, caption='single_scan')
+        plot_scan_with_hist(self.freq[idx], residuals[idx], label=self.id, caption='single_scan')
 
         #also show the predicted axion power
-        plot_scan_with_hist(self.freq, residuals, prediction=axion, label=self.id,
+        plot_scan_with_hist(self.freq[idx], residuals[idx], prediction=axion[idx], label=self.id,
                             caption='prediction_single_scan')
 
 
