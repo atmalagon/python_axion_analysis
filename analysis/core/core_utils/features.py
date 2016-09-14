@@ -63,6 +63,20 @@ def mask_data(X, start=0, left=0, right=0, end=256):
     Xmask = np.concatenate((X[start:left], X[right:end]))
     return Xmask
 
+def g_a2gamma_ksvz(f):
+    """
+    Tells you what g_a2gamma is at KSVZ, in GeV^-1 for
+    a given frequency (input as Hz).
+    """
+    g = 0.97
+    alpha = 1. / 137.
+    m_times_f = 0.006 #GeV^2
+    hbar = 6.582122e-25 # GeV-sec                                                  c = 3.e10 # cm / sec                                                       
+    m = hbar * 2 * np.pi * f
+    
+    g_a2gamma = g * alpha / (np.pi * m_times_f) * m
+    return g_a2gamma
+
 def axion_power(B, f_0, delta, Q, C=0.5, beta=1., g=0.97, rho=0.45,
                 V=0.0015):
     """
@@ -96,3 +110,6 @@ if __name__ == "__main__":
 
     #check that lorentzian at peak is 1
     print lorentz(5000, 5000, 12000)
+
+    #check that g_a2gamma at 1GHz is ~ 1.5e-15 GeV^-1.
+    print g_a2gamma_ksvz(1.e9)

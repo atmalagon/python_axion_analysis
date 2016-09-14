@@ -81,7 +81,7 @@ class Scan(object):
         residuals = (normalize - 1) * kbt
         uncertainties = np.full(len(residuals), sigma)
 
-        return residuals, uncertainties
+        return residuals, kbt, uncertainties
 
     def create_axion_array(self):
         """
@@ -122,15 +122,25 @@ class Scan(object):
             print 'model not supported.'
             return
 
-        residuals, uncertainties = self.get_residuals(baseline)
+        residuals, kbt, uncertainties = self.get_residuals(baseline)
         axion = self.create_axion_array()
+
+        #following Gray's procedure, divide residuals by axion power
+        #and multiply by g_KSVZ^2 to get measured g^2.
+
+        g_ksvz = np.array([g_a2gamma_ksvz(f) for f in self.freq])
+        g_squared = np.divide(residuals, axion) * np.power(g_ksvz, 2)
 
         #plot data with fit - (TODO) when using savitzky-golay filter, need to
         #cut out data as edge effects are prominent up to window_size / 2.
 
         idx=np.arange(15, self.num_points -7)
-        plot_errorbars(self.freq[idx], self.data[idx],
-                       fit=baseline[idx], caption='single_scan_with_fit')
+
+        plot_errorbars(self.freq[idx], self.data[idx], fit=baseline[idx],
+                       caption='single_scan_with_fit')
+
+        #plot the scan's sensitivity to measured g_a2gamma^2.
+        plot_gsquared(self.freq[idx], g_squared[idx], caption='single_scan_g_squared_sensitivity')
 
         #plot residuals with their distribution in a hist on the side
         plot_scan_with_hist(self.freq[idx], residuals[idx], label=self.id, caption='single_scan')

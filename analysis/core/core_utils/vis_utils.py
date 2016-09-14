@@ -19,8 +19,6 @@ def plot_errorbars(X, Y, error=None, fit=None, label=None, caption=''):
     """
     Saves plot to disk:
     (1) Y vs X with error bars (optional) and fit superimposed (optional).
-    Can also choose starting point of data to plot (starts from beginning of
-    input array by default.)
     """
     if np.mean(Y) < 1.e-20:
         Yplot = Y * 1.e24
@@ -47,6 +45,20 @@ def plot_errorbars(X, Y, error=None, fit=None, label=None, caption=''):
     plt.savefig(pltdir + caption + '.png', bbox_inches='tight')
     plt.close()
 
+def plot_gsquared(x, gsquared, label=None, caption=''):
+    """
+    Saves plot of  gsqured vs x, gsquared is in inverse GeV^2.
+    """
+    plt.scatter(x, gsquared, label=None)
+
+    plt.xlabel('Frequency [MHz]')
+    plt.ylabel('$g_{a\gamma\gamma}^2$ [1/$\text{GeV}^2$]')
+    plt.grid(True)
+    plt.title(caption.replace('_', ' '))
+
+    plt.ylim([0.97* np.amin(gsquared), 1.03 * np.amax(gsquared)])
+    plt.savefig(pltdir + caption + '.png', bbox_inches='tight')
+    plt.close()
 
 def plot_hist(pow_hist, set_bins=30, caption=''):
     """Plots and saves  a histogram of the input list 'hist'. """
