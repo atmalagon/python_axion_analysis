@@ -128,8 +128,12 @@ class Scan(object):
         #following Gray's procedure, divide residuals by axion power
         #and multiply by g_KSVZ^2 to get measured g^2.
 
-        g_ksvz = np.array([g_a2gamma_ksvz(f) for f in self.freq])
-        g_squared = np.divide(residuals, axion) * np.power(g_ksvz, 2)
+        g_ksvz_squared = np.array([g_a2gamma_ksvz(f*1.e6)**2 for f in self.freq])
+        g_squared = np.divide(residuals, axion) * g_ksvz_squared
+        print np.mean(residuals)
+        print np.mean(axion)
+        print np.mean(g_ksvz_squared)
+        print np.mean(g_squared)
 
         #plot data with fit - (TODO) when using savitzky-golay filter, need to
         #cut out data as edge effects are prominent up to window_size / 2.

@@ -112,4 +112,4 @@ if __name__ == "__main__":
     print lorentz(5000, 5000, 12000)
 
     #check that g_a2gamma at 1GHz is ~ 1.5e-15 GeV^-1.
-    print g_a2gamma_ksvz(1.e9)
+    print g_a2gamma_ksvz(0.7e9)
